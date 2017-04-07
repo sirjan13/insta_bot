@@ -81,11 +81,48 @@ def get_recent_posts(username):
         id.append(data['data'][i]['id'])
     return id
 
+def like_user_post(username, criterion ) :
+    media_id = evaluate_criterion(username, criterion)
+    url = BASE_URL + "/media/" + media_id + "/likes"
+    requests_data = {"access_token": APP_ACCESS_TOKEN}
+    like_request = requests.post(url, requests_data).json()
+    #print like_request
+    message = check_success(like_request['meta']['code'])
+    if message:
+        print "Sucessfully Liked the Post "
+    else:
+        print "Sorry a Error occoured..Try again Later "
+
+
+def comment_user_post(username, criteria):
+    media_id = evaluate_criterion(username, criteria)
+    url = BASE_URL + "/media/" + media_id + "/comments"
+    requests_data = {"access_token": APP_ACCESS_TOKEN, 'text': "hi bot hun mein "}
+    comment_request = requests.post(url, requests_data).json()
+    message = check_success(comment_request['meta']['code'])
+    if message:
+        print "Sucessfully commented on the Post "
+    else:
+        print "Sorry a Error occoured..Try again Later "
+
 
 #ranking users post on basis of likes or comments
+def ask_criteria():
+    criteria = raw_input(("What criteria do you wish to set for ranking posts for %s : \n 1.Likes \n 2.Comments \n") % (username))
+    tasks = {"1": "likes", "2": "comments"}
+    return tasks[criteria]
+
+
+
 username = raw_input("Enter the Username of the Person on whose Profile you want the bot to work on : ")
-task_required = raw_input(("What do you wish to set ranking criteria for %s : \n 1.Likes \n 2.Comments \n")%(username) )
-tasks = {"1": "likes", "2": "comments"}
+task_required = raw_input(("What do you wish to do for %s : \n 1.Likes \n 2.Comments \n")%(username) )
+
+criteria = ask_criteria()
+
+if task_required == "1":
+    like_user_post(username, criteria)
+else:
+    comment_user_post(username, criteria)
+
 #owner_info()
 #print get_user_id_from_username(username)
-print "id =", evaluate_criterion(username, tasks[task_required])
