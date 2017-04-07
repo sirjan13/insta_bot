@@ -9,11 +9,13 @@ APP_ACCESS_TOKEN = "482738385.a4c3737.f3781c605e8d4cebbc31ccd9095f5ed8"
 
 BASE_URL = "https://api.instagram.com/v1"
 
+
 #checks if the status code returned denoted success or not.It Returns a boolean depeding on success or failure
 def check_success(status_code):
     if status_code == 200:
         return True
     return False
+
 
 #collects the owner information
 def owner_info():
@@ -27,7 +29,8 @@ def owner_info():
     if len(bio) == 0:
         bio = "User has not updated the Bio"
     print "Bio: " + bio
-    print "------------------------------------------------" \
+    print "------------------------------------------------"
+
 
 #Gets the user id for the passed username
 def get_user_id_from_username(username):
@@ -38,6 +41,7 @@ def get_user_id_from_username(username):
         id = user_data['data'][0]['id']
         return id
     return " Sorry The requested User could not be Found "
+
 
 def user_post_info(media_id):
     url = BASE_URL + "/media/" + media_id + "?access_token=" + APP_ACCESS_TOKEN
@@ -52,10 +56,10 @@ def get_likes_count(media_id):
 
 def get_comments_count(media_id):
     data = user_post_info(media_id)
-    return data['data']['likes']['count']
+    return data['data']['comments']['count']
 
 
-'''to evaluate the criteria for interesting posts'''
+#To evaluate the criteria for interesting posts
 def evaluate_criterion(username,criteria):
     id = get_recent_posts(username)
     b = {}
@@ -71,7 +75,6 @@ def evaluate_criterion(username,criteria):
     return b[-1][0]
 
 
-
 def get_recent_posts(username):
     user_id = get_user_id_from_username(username)
     url = BASE_URL + "/users/" + user_id + "/media/recent/?access_token=" + APP_ACCESS_TOKEN
@@ -80,6 +83,7 @@ def get_recent_posts(username):
     for i in range(len(data['data'])):
         id.append(data['data'][i]['id'])
     return id
+
 
 def like_user_post(username, criterion ) :
     media_id = evaluate_criterion(username, criterion)
@@ -97,7 +101,8 @@ def like_user_post(username, criterion ) :
 def comment_user_post(username, criteria):
     media_id = evaluate_criterion(username, criteria)
     url = BASE_URL + "/media/" + media_id + "/comments"
-    requests_data = {"access_token": APP_ACCESS_TOKEN, 'text': "hi bot hun mein "}
+    comment_text = ask_user_comment()
+    requests_data = {"access_token": APP_ACCESS_TOKEN, 'text': comment_text}
     comment_request = requests.post(url, requests_data).json()
     message = check_success(comment_request['meta']['code'])
     if message:
@@ -106,11 +111,21 @@ def comment_user_post(username, criteria):
         print "Sorry a Error occoured..Try again Later "
 
 
-def comment_word_search(word):
-    media_id = evaluate_criterion(username, criteria)
+def fetch_post_comments(media_id):
     url = BASE_URL + "/media/" + media_id + "/comments?access_token=" + APP_ACCESS_TOKEN
     data = requests.get(url).json()
     data = data['data']
+    return data
+
+
+def ask_user_comment():
+    comment = raw_input("\nWhat comment do you want to make :- ")
+    return comment
+
+
+def comment_word_search(word):
+    media_id = evaluate_criterion(username, criteria)
+    data = fetch_post_comments(media_id)
     for i in range(len(data)):
         a = data[i]['text']
         b = a.strip()
@@ -133,34 +148,61 @@ def delete_comment_on_search(word):
     else:
         print "No Comment contains the word %s " %word
 
-#asks the word to search in comments from the user.
+
+def comments_average_words():
+    media_id = evaluate_criterion(username, criteria)
+    total_comments = get_comments_count(media_id)
+    data = fetch_post_comments(media_id)
+    no_of_words = 0
+    for i in range(len(data)):
+        comment = data[i]['text']
+        no_of_words += len(comment.split())
+    no_of_words = float(no_of_words)
+    average_words_per_comment = no_of_words / total_comments
+    return average_words_per_comment
+
+
+#Asks the word to search in comments from the user.
 def ask_word():
     return raw_input("Enter the word you want to search for :- ")
 
 
-
-#ranking users post on basis of likes or comments.
+#Ranking users post on basis of likes or comments.
 def ask_criteria():
-    criteria = raw_input(("What criteria do you wish to set for ranking posts for %s : \n 1.Likes \n 2.Comments \n") % (username))
+    choice = raw_input(("What criteria do you wish to set for ranking posts for %s : \n 1.Likes \n 2.Comments \n") % (username))
     tasks = {"1": "likes", "2": "comments"}
-    return tasks[criteria]
-
-get_user_id_from_username("sanskar27jain_")
+    return tasks[choice]
 
 
+def ask_username():
+    user_name = raw_input("Enter the Username of the Person on whose Profile you want the bot to work on : ")
+    return user_name
 
-username = raw_input("Enter the Username of the Person on whose Profile you want the bot to work on : ")
-task_required = raw_input(("What do you wish to do for %s : \n 1.Like a Post \n 2.Comment on a Post \n 3.Delete a comments having a particular word \n")%(username) )
 
-criteria = ask_criteria()
+task_required = raw_input("What do you wish to do : \n "
+                           "1.Get Owner Details \n "
+                           "2.Get User's User Id  \n "
+                           "3.Like a Post \n "
+                           "4.Comment on a Post \n "
+                           "5.Delete a comment having a particular word \n "
+                           "6.Display the average words per comment in a Post \n ----> ")
+
 
 if task_required == "1":
-    like_user_post(username, criteria)
-elif task_required == "2":
-    comment_user_post(username, criteria)
+    owner_info()
 else:
-    word = ask_word()
-    delete_comment_on_search(word)
+    username = ask_username()
+    if task_required == "2":
+        print get_user_id_from_username(username)
+    else:
+        criteria = ask_criteria()
+        if task_required == "3":
+            like_user_post(username, criteria)
+        elif task_required == "4":
+            comment_user_post(username, criteria)
+        elif task_required == "5":
+            word = ask_word()
+            delete_comment_on_search(word)
+        else:
+            print comments_average_words()
 
-#owner_info()
-#print get_user_id_from_username(username)
