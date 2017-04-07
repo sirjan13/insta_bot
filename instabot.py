@@ -37,90 +37,101 @@ def get_user_id_from_username(username):
     url = BASE_URL + "/users/search?q=" + username + "&access_token=" + APP_ACCESS_TOKEN  #For Eg:https://api.instagram.com/v1/users/search?q=jack&access_token=ACCESS-TOKEN
     user_data = requests.get(url).json()
     code = check_success(user_data["meta"]["code"])
-    if code == True and len(user_data['data']):
+    if code and len(user_data['data']):
         id = user_data['data'][0]['id']
         return id
-    return " Sorry The requested User could not be Found "
+    return False  #for nasty errors
 
 
 def user_post_info(media_id):
     url = BASE_URL + "/media/" + media_id + "?access_token=" + APP_ACCESS_TOKEN
     data = requests.get(url).json()
-    return data
+    code = check_success(data["meta"]["code"])
+    if code:
+        return data
+    return False
 
 
 def get_likes_count(media_id):
     data = user_post_info(media_id)
-    return data['data']['likes']['count']
+    if data:
+        return data['data']['likes']['count']
+    return False
 
 
 def get_comments_count(media_id):
     data = user_post_info(media_id)
-    return data['data']['comments']['count']
-
-
-#To evaluate the criteria for interesting posts
-def evaluate_criterion(username,criteria):
-    id = get_recent_posts(username)
-    b = {}
-    d = {}
-    for i in id:
-        if criteria == "comments":
-            a = get_comments_count(i)
-        else:
-            a = get_likes_count(i)
-        b[i] = a
-    b = sorted(b.items(), key=operator.itemgetter(1))
-    d = sorted(d.items(), key=operator.itemgetter(1))
-    return b[-1][0]
-
+    if data:
+        return data['data']['comments']['count']
+    return False
 
 def get_recent_posts(username):
     user_id = get_user_id_from_username(username)
-    url = BASE_URL + "/users/" + user_id + "/media/recent/?access_token=" + APP_ACCESS_TOKEN
-    data = requests.get(url).json()
-    id = []
-    for i in range(len(data['data'])):
-        id.append(data['data'][i]['id'])
-    return id
+    if user_id:
+        url = BASE_URL + "/users/" + user_id + "/media/recent/?access_token=" + APP_ACCESS_TOKEN
+        data = requests.get(url).json()
+        id = []
+        for i in range(len(data['data'])):
+            id.append(data['data'][i]['id'])
+        return id
+    return False
+
+
+#To evaluate the criteria for interesting posts
+def evaluate_criterion(username, criteria):
+    id = get_recent_posts(username)
+    if id:
+        b = {}
+        d = {}
+        for i in id:
+            if criteria == "comments":
+                a = get_comments_count(i)
+            else:
+                a = get_likes_count(i)
+            b[i] = a
+        b = sorted(b.items(), key=operator.itemgetter(1))
+        d = sorted(d.items(), key=operator.itemgetter(1))
+        return b[-1][0]
+    return False
 
 
 def like_user_post(username, criterion ) :
     media_id = evaluate_criterion(username, criterion)
-    url = BASE_URL + "/media/" + media_id + "/likes"
-    requests_data = {"access_token": APP_ACCESS_TOKEN}
-    like_request = requests.post(url, requests_data).json()
-    #print like_request
-    message = check_success(like_request['meta']['code'])
-    if message:
-        print "Sucessfully Liked the Post "
-    else:
-        print "Sorry a Error occoured..Try again Later "
+    if media_id:
+        url = BASE_URL + "/media/" + media_id + "/likes"
+        requests_data = {"access_token": APP_ACCESS_TOKEN}
+        like_request = requests.post(url, requests_data).json()
+        message = check_success(like_request['meta']['code'])
+        if message:
+            return "Successfully Liked the Post "
+        else:
+            return "Sorry could not Like the Post..Try again Later "
+    return False
 
 
 def comment_user_post(username, criteria):
     media_id = evaluate_criterion(username, criteria)
-    url = BASE_URL + "/media/" + media_id + "/comments"
-    comment_text = ask_user_comment()
-    requests_data = {"access_token": APP_ACCESS_TOKEN, 'text': comment_text}
-    comment_request = requests.post(url, requests_data).json()
-    message = check_success(comment_request['meta']['code'])
-    if message:
-        print "Sucessfully commented on the Post "
-    else:
-        print "Sorry a Error occoured..Try again Later "
+    if media_id:
+        url = BASE_URL + "/media/" + media_id + "/comments"
+        comment_text = ask_user_comment()
+        requests_data = {"access_token": APP_ACCESS_TOKEN, 'text': comment_text}
+        comment_request = requests.post(url, requests_data).json()
+        message = check_success(comment_request['meta']['code'])
+        if message:
+            return "Successfully commented on the Post "
+        else:
+            return "Sorry could not Comment on the Post..Try again Later "
+    return False
 
 
 def fetch_post_comments(media_id):
     url = BASE_URL + "/media/" + media_id + "/comments?access_token=" + APP_ACCESS_TOKEN
     data = requests.get(url).json()
+    code = check_success(data['meta']['code'])
     data = data['data']
-    return data
-
-
-def ask_user_comment():
-    comment = raw_input("\nWhat comment do you want to make :- ")
-    return comment
+    if code:
+        return data
+    return False
 
 
 def comment_word_search(word):
@@ -142,24 +153,26 @@ def delete_comment_on_search(word):
         data = requests.delete(url).json()
         success = check_success(data['meta']['code'])
         if success:
-            print "Comment Delted Sucessfully. "
+            return "Comment Delted Sucessfully. "
         else:
-            print "I can't Delete this "
+            return "I can't Delete this "
     else:
-        print "No Comment contains the word %s " %word
+        return "No Comment contains the word %s " % word
 
 
 def comments_average_words():
     media_id = evaluate_criterion(username, criteria)
-    total_comments = get_comments_count(media_id)
-    data = fetch_post_comments(media_id)
-    no_of_words = 0
-    for i in range(len(data)):
-        comment = data[i]['text']
-        no_of_words += len(comment.split())
-    no_of_words = float(no_of_words)
-    average_words_per_comment = no_of_words / total_comments
-    return average_words_per_comment
+    if media_id:
+        total_comments = get_comments_count(media_id)
+        data = fetch_post_comments(media_id)
+        no_of_words = 0
+        for i in range(len(data)):
+            comment = data[i]['text']
+            no_of_words += len(comment.split())
+        no_of_words = float(no_of_words)
+        average_words_per_comment = no_of_words / total_comments
+        return average_words_per_comment
+    return False
 
 
 #Asks the word to search in comments from the user.
@@ -167,16 +180,35 @@ def ask_word():
     return raw_input("Enter the word you want to search for :- ")
 
 
+#Asks user what comment to make
+def ask_user_comment():
+    comment = raw_input("\nWhat comment do you want to make :- ")
+    return comment
+
+
 #Ranking users post on basis of likes or comments.
 def ask_criteria():
-    choice = raw_input(("What criteria do you wish to set for ranking posts for %s : \n 1.Likes \n 2.Comments \n") % (username))
     tasks = {"1": "likes", "2": "comments"}
-    return tasks[choice]
-
+    choice = raw_input(("What criteria do you wish to set for ranking posts for %s : \n 1.Likes \n 2.Comments \n") % (username))
+    if choice in ['1', '2']:
+        return tasks[choice]
+    else :
+        print "Sorry I guess that was a wrong Input :(  "
+        ask_criteria()
 
 def ask_username():
     user_name = raw_input("Enter the Username of the Person on whose Profile you want the bot to work on : ")
-    return user_name
+    valid_user = get_user_id_from_username(user_name)
+    if valid_user:
+        return user_name
+    return False
+
+
+def print_response_text(parameter):
+    if parameter :
+        print parameter
+    else:
+        print " A Error Occoured!! "
 
 
 task_required = raw_input("What do you wish to do : \n "
@@ -192,17 +224,24 @@ if task_required == "1":
     owner_info()
 else:
     username = ask_username()
-    if task_required == "2":
-        print get_user_id_from_username(username)
-    else:
-        criteria = ask_criteria()
-        if task_required == "3":
-            like_user_post(username, criteria)
-        elif task_required == "4":
-            comment_user_post(username, criteria)
-        elif task_required == "5":
-            word = ask_word()
-            delete_comment_on_search(word)
+    if username:
+        if task_required == "2":
+            user_id = get_user_id_from_username(username)
+            if user_id:
+                print user_id
+            else:
+                print " The User could not be Found "
         else:
-            print comments_average_words()
-
+            criteria = ask_criteria()
+            if task_required == "3":
+                response_text = like_user_post(username, criteria)
+            elif task_required == "4":
+                response_text = comment_user_post(username, criteria)
+            elif task_required == "5":
+                word = ask_word()
+                response_text = delete_comment_on_search(word)
+            else:
+                response_text = comments_average_words()
+            print_response_text(response_text)
+    else:
+        print "Sorry the following Request could not be completed"
