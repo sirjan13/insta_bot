@@ -106,23 +106,61 @@ def comment_user_post(username, criteria):
         print "Sorry a Error occoured..Try again Later "
 
 
-#ranking users post on basis of likes or comments
+def comment_word_search(word):
+    media_id = evaluate_criterion(username, criteria)
+    url = BASE_URL + "/media/" + media_id + "/comments?access_token=" + APP_ACCESS_TOKEN
+    data = requests.get(url).json()
+    data = data['data']
+    for i in range(len(data)):
+        a = data[i]['text']
+        b = a.strip()
+        if word in b:
+            return data[i]['id']
+    return False
+
+
+def delete_comment_on_search(word):
+    comment_id = comment_word_search(word)
+    if comment_id:
+        media_id = evaluate_criterion(username, criteria)
+        url = BASE_URL + "/media/" + media_id + "/comments/" + comment_id + "?access_token=" +APP_ACCESS_TOKEN
+        data = requests.delete(url).json()
+        success = check_success(data['meta']['code'])
+        if success:
+            print "Comment Delted Sucessfully. "
+        else:
+            print "I can't Delete this "
+    else:
+        print "No Comment contains the word %s " %word
+
+#asks the word to search in comments from the user.
+def ask_word():
+    return raw_input("Enter the word you want to search for :- ")
+
+
+
+#ranking users post on basis of likes or comments.
 def ask_criteria():
     criteria = raw_input(("What criteria do you wish to set for ranking posts for %s : \n 1.Likes \n 2.Comments \n") % (username))
     tasks = {"1": "likes", "2": "comments"}
     return tasks[criteria]
 
+get_user_id_from_username("sanskar27jain_")
+
 
 
 username = raw_input("Enter the Username of the Person on whose Profile you want the bot to work on : ")
-task_required = raw_input(("What do you wish to do for %s : \n 1.Likes \n 2.Comments \n")%(username) )
+task_required = raw_input(("What do you wish to do for %s : \n 1.Like a Post \n 2.Comment on a Post \n 3.Delete a comments having a particular word \n")%(username) )
 
 criteria = ask_criteria()
 
 if task_required == "1":
     like_user_post(username, criteria)
-else:
+elif task_required == "2":
     comment_user_post(username, criteria)
+else:
+    word = ask_word()
+    delete_comment_on_search(word)
 
 #owner_info()
 #print get_user_id_from_username(username)
