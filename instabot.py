@@ -21,15 +21,9 @@ def check_success(status_code):
 def owner_info():
     url = BASE_URL + "/users/self/?access_token=" + APP_ACCESS_TOKEN
     owner_data = requests.get(url).json()
-    print "------------------Owner Info-------------------"
-    print "Id : "+owner_data["data"]['id']
-    print "Full Name : "+owner_data["data"]["full_name"]
-    print "Username : "+owner_data["data"]["username"]
-    bio = owner_data["data"]["bio"]
-    if len(bio) == 0:
-        bio = "User has not updated the Bio"
-    print "Bio: " + bio
-    print "------------------------------------------------"
+    print_header("owner")
+    print_info_basic(owner_data)
+    print_footer("owner")
 
 
 #Gets the user id for the passed username
@@ -66,14 +60,76 @@ def user_post(username, criteria):
                 no_of_likes = get_likes_count(media_id)
                 no_of_comments = get_comments_count(media_id)
                 link = data['data']['link']
-                print "------------------Post Info---------------------"
-                print "Username : " + username
-                print "Link : " + link
-                print "Number of Likes : " + str(no_of_likes)
-                print "Number of Comments : " + str(no_of_comments)
-                print "------------------------------------------------"
+                print_header("post")
+                print "Username                            : " + username
+                print "Link                                : " + link
+                print "Number of Likes                     : " + str(no_of_likes)
+                print "Number of Comments                  : " + str(no_of_comments)
+                print_footer("post")
     else:
         print "The user has no Posts"
+
+
+def print_header(role):
+    if role == "user":
+        heading = "User Info"
+        x = 70
+    elif role == "owner":
+        heading = "Owner Info"
+        x = 70
+    else:
+        heading = "Post Info"
+        x = 50
+
+    header_right = ""
+    for i in range(x):
+        header_right += '-'
+    header_left = header_right
+    print header_left + heading + header_right
+
+
+def print_footer(role):
+    if role in ["owner", "user"]:
+        y = 140
+    else:
+        y = 100
+    y += len(role + " info")
+
+    footer = ""
+    for i in range(y):
+        footer += '-'
+    print footer
+
+
+def get_user_details(username):
+    user_id = get_user_id_from_username(username)
+    if user_id:
+        url = BASE_URL + "/users/" + str(user_id) + "/?access_token=" + APP_ACCESS_TOKEN
+        data = requests.get(url).json()
+        print_header("user")
+        print_info_basic(data)
+        print_footer("user")
+
+
+def print_info_basic(data):
+    print "Id                                   : " + data['data']['id']
+    print "Full Name                            : " + data["data"]["full_name"]
+    print "Username                             : " + data["data"]["username"]
+    print "Profile Picture                      : " + data['data']['profile_picture']
+    bio = data["data"]["bio"]
+    if len(bio) == 0:
+        bio = "User has not updated the Bio"
+    print "Bio                                  : " + bio
+    website = data["data"]['website']
+    if len(website) == 0:
+        website = "User has not updated the Website Link"
+    print "Website                              : " + website
+    posts = data['data']['counts']['media']
+    if posts == 0:
+        posts = "No Posts Yet"
+    print "No of Posts                          : " + str(posts)
+    print "People Followed By                   : " + str(data['data']['counts']["followed_by"])
+    print "People Following                     : " + str(data['data']['counts']["follows"])
 
 
 def get_likes_count(media_id):
@@ -171,6 +227,7 @@ def comment_word_search(word):
         return False
     return False
 
+
 def delete_comment_on_search(word):
     comment_id = comment_word_search(word)
     if comment_id:
@@ -243,13 +300,14 @@ def ask_user_input():
     task_input = raw_input("What do you wish to do : \n "
                                "1.Get Owner Details \n "
                                "2.Get User's User Id  \n "
-                               "3.Get User's Most interesting Post Details \n "
-                               "4.Like a Post \n "
-                               "5.Comment on a Post \n "
-                               "6.Delete a comment having a particular word \n "
-                               "7.Display the average words per comment in a Post \n ----> ")
+                               "3.Get User's Details  \n "
+                               "4.Get User's Most interesting Post Details \n "
+                               "5.Like a Post \n "
+                               "6.Comment on a Post \n "
+                               "7.Delete a comment having a particular word \n "
+                               "8.Display the average words per comment in a Post \n ----> ")
 
-    if task_input in [str(x) for x in range(1, 8)]:
+    if task_input in [str(x) for x in range(1, 9)]:
         return task_input
     else:
         print "Sorry I guess that was a wrong Input :(  "
@@ -274,19 +332,22 @@ while ch == "y":
                 else:
                     print " The User could not be Found "
 
+            elif task_required == "3":
+                get_user_details(username)
+
             else:
                 if no_of_user_posts(username):
                     criteria = ask_criteria()
 
-                    if task_required == "3":
+                    if task_required == "4":
                         user_post(username, criteria)
 
                     else:
-                        if task_required == "4":
+                        if task_required == "5":
                             response_text = like_user_post(username, criteria)
-                        elif task_required == "5":
-                            response_text = comment_user_post(username, criteria)
                         elif task_required == "6":
+                            response_text = comment_user_post(username, criteria)
+                        elif task_required == "7":
                             word = ask_word()
                             response_text = delete_comment_on_search(word)
                         else:
