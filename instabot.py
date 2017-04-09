@@ -10,14 +10,14 @@ APP_ACCESS_TOKEN = "482738385.a4c3737.f3781c605e8d4cebbc31ccd9095f5ed8"
 BASE_URL = "https://api.instagram.com/v1"
 
 
-#checks if the status code returned denoted success or not.It Returns a boolean depeding on success or failure
+#  checks if the status code returned denoted success or not.It Returns a boolean depeding on success or failure
 def check_success(status_code):
     if status_code == 200:
         return True
     return False
 
 
-#collects the owner information
+# collects the owner information
 def owner_info():
     url = BASE_URL + "/users/self/?access_token=" + APP_ACCESS_TOKEN
     owner_data = requests.get(url).json()
@@ -26,7 +26,7 @@ def owner_info():
     print_footer("owner")
 
 
-#Gets the user id for the passed username
+#  Gets the user id for the passed username
 def get_user_id_from_username(username):
     url = BASE_URL + "/users/search?q=" + username + "&access_token=" + APP_ACCESS_TOKEN  #For Eg:https://api.instagram.com/v1/users/search?q=jack&access_token=ACCESS-TOKEN
     user_data = requests.get(url).json()
@@ -37,6 +37,7 @@ def get_user_id_from_username(username):
     return False  #for nasty errors
 
 
+#  get user post information
 def user_post_info(media_id):
     url = BASE_URL + "/media/" + media_id + "?access_token=" + APP_ACCESS_TOKEN
     data = requests.get(url).json()
@@ -331,6 +332,7 @@ def ask_user_input():
         print "Sorry I guess that was a wrong Input :(  "
         ask_user_input()
 
+print "_________________________________WELCOME TO MyBOT__________________________________"
 ch = "y"
 while ch == "y":
 
@@ -380,3 +382,5 @@ while ch == "y":
             print "I don't recognise this username in my current Mode"
     ch = raw_input("Do You want to make another Request to the Bot? (y/n) :- ")
     ch = ch.lower()
+else:
+    print "Hoping I served ur requests , BYE! "
