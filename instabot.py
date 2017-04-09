@@ -215,34 +215,49 @@ def fetch_post_comments(media_id):
     return False
 
 
+#  search word input by user
 def comment_word_search(word):
     media_id = evaluate_criterion(username, criteria)
     if media_id:
         data = fetch_post_comments(media_id)
+
         for i in range(len(data)):
             a = data[i]['text']
+            comment_by = data[i]['from']['full_name']
+
             b = a.strip()
             if word in b:
-                return data[i]['id']
+                my_list = [data[i]['id'], a, comment_by]
+                return my_list
         return False
     return False
 
 
+# delete comment on successful word search
 def delete_comment_on_search(word):
-    comment_id = comment_word_search(word)
-    if comment_id:
-        media_id = evaluate_criterion(username, criteria)
-        url = BASE_URL + "/media/" + media_id + "/comments/" + comment_id + "?access_token=" +APP_ACCESS_TOKEN
-        data = requests.delete(url).json()
-        success = check_success(data['meta']['code'])
-        if success:
-            return "Comment Deleted Successfully. "
-        else:
-            return "I am not authorised to Delete this "
-    else:
+    comment_data = comment_word_search(word)
+    if comment_data:
+        comment_id = comment_data[0]
+        if comment_id:
+            media_id = evaluate_criterion(username, criteria)
+            url = BASE_URL + "/media/" + media_id + "/comments/" + comment_id + "?access_token=" +APP_ACCESS_TOKEN
+            data = requests.delete(url).json()
+            comment = comment_data[1]
+            comment_by = comment_data[2]
+            success = check_success(data['meta']['code'])
+            if success:
+                success_message = "\n\n\nComment Deleted Successfully."
+                message_text = "\n\nDeleting Comment : " + comment + "\n     By: " + comment_by + success_message
+                return message_text
+            else:
+                error = "\n\n\n Sorry,I am not authorised to Delete this as its done by some other user"
+                message_text = "\n\nDeleting Comment : " + comment + "\n     By: " + comment_by +  error
+                return message_text
         return "No Comment contains the word %s " % word
+    return "No Comment contains the word %s " % word
 
 
+# display average words per comment on most popular post
 def comments_average_words():
     media_id = evaluate_criterion(username, criteria)
     if media_id:
@@ -259,18 +274,18 @@ def comments_average_words():
     return False
 
 
-#Asks the word to search in comments from the user.
+# Asks the word to search in comments from the user.
 def ask_word():
     return raw_input("Enter the word you want to search for :- ")
 
 
-#Asks user what comment to make
+#  Asks user what comment to make
 def ask_user_comment():
     comment = raw_input("\nWhat comment do you want to make :- ")
     return comment
 
 
-#Ranking users post on basis of likes or comments.
+#  Ranking users post on basis of likes or comments.
 def ask_criteria():
     tasks = {"1": "likes", "2": "comments"}
     choice = raw_input(("What criteria do you wish to set for ranking posts for %s (hight-->low) : \n 1.Likes \n 2.Comments \n") % (username))
@@ -281,6 +296,7 @@ def ask_criteria():
         ask_criteria()
 
 
+# function to take username from user
 def ask_username():
     user_name = raw_input("Enter the Username of the Person on whose Profile you want the bot to work on : ")
     valid_user = get_user_id_from_username(user_name)
@@ -289,6 +305,7 @@ def ask_username():
     return False
 
 
+# print the values returned by the functions called
 def print_response_text(parameter):
     if parameter:
         print parameter
@@ -296,6 +313,7 @@ def print_response_text(parameter):
         print " A Error Occoured!! "
 
 
+# driver function to take user choice
 def ask_user_input():
     task_input = raw_input("What do you wish to do : \n "
                                "1.Get Owner Details \n "
